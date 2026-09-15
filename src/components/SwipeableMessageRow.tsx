@@ -10,6 +10,7 @@ interface SwipeableMessageRowProps {
   mail: MailMessage;
   onOpen: () => void;
   onAddToCalendar: () => void;
+  onToggleRead: () => void;
 }
 
 export function SwipeableMessageRow(props: SwipeableMessageRowProps) {

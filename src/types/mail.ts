@@ -15,6 +15,7 @@ export interface MailMessage {
 
 export interface MailDetail extends MailMessage {
   body: string;
+  bodyContentType: 'html' | 'text';
 }
 
 export interface MailPage {

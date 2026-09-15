@@ -6,8 +6,9 @@ import {
   type AuthenticationResult,
 } from '@azure/msal-browser';
 
-// メールの読み取りに必要な最小権限だけを要求する。メールの変更・送信権限は要求しない。
-export const graphScopes = ['User.Read', 'Mail.Read'];
+// Mail.ReadWriteはOutlook側の既読・未読状態を更新するために使用する。
+// メール送信権限は要求しない。
+export const graphScopes = ['User.Read', 'Mail.ReadWrite'];
 
 const clientId = import.meta.env.VITE_MS_CLIENT_ID?.trim();
 

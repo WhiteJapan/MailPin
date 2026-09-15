@@ -6,6 +6,7 @@ interface MessageRowProps {
   mail: MailMessage;
   onOpen: () => void;
   onAddToCalendar: () => void;
+  onToggleRead: () => void;
 }
 
 function formatReceived(value: string): string {
@@ -19,7 +20,7 @@ function formatReceived(value: string): string {
   ).format(date);
 }
 
-export const MessageRow = memo(function MessageRow({ mail, onOpen, onAddToCalendar }: MessageRowProps) {
+export const MessageRow = memo(function MessageRow({ mail, onOpen, onAddToCalendar, onToggleRead }: MessageRowProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +61,10 @@ export const MessageRow = memo(function MessageRow({ mail, onOpen, onAddToCalend
             <button role="menuitem" onClick={() => { setMenuOpen(false); onAddToCalendar(); }}>
               <CalendarIcon />
               Googleカレンダーに追加
+            </button>
+            <button role="menuitem" onClick={() => { setMenuOpen(false); onToggleRead(); }}>
+              <span className="menu-status-icon" aria-hidden="true">{mail.isRead ? '○' : '●'}</span>
+              {mail.isRead ? '未読にする' : '既読にする'}
             </button>
           </div>
         )}

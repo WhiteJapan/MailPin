@@ -6,7 +6,7 @@ import { LoadingState } from '../components/LoadingState';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { MailIcon, RefreshIcon, SearchIcon } from '../components/Icons';
 import { SwipeableMessageRow } from '../components/SwipeableMessageRow';
-import { getInbox } from '../graph/client';
+import { getInbox, updateMessageReadState } from '../graph/client';
 import { userMessageForError } from '../graph/errors';
 import { useOnline } from '../hooks/useOnline';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
@@ -36,6 +36,19 @@ export function InboxScreen({ account, profilePhotoUrl, onOpenMail, onOpenSettin
     ? messages.filter((mail) => [mail.sender.name, mail.sender.address, mail.subject, mail.bodyPreview]
         .some((value) => value.toLocaleLowerCase('ja').includes(normalizedQuery)))
     : messages;
+
+  async function toggleRead(mail: MailMessage) {
+    const nextState = !mail.isRead;
+    setMessages((current) => current.map((item) => item.id === mail.id ? { ...item, isRead: nextState } : item));
+    try {
+      await updateMessageReadState(account, mail.id, nextState);
+      setNotice(nextState ? 'Outlookでも既読にしました' : 'Outlookでも未読にしました');
+    } catch (cause) {
+      logSafeError('Read state update failed', cause);
+      setMessages((current) => current.map((item) => item.id === mail.id ? { ...item, isRead: mail.isRead } : item));
+      setNotice('既読状態を更新できませんでした。もう一度お試しください');
+    }
+  }
 
   const load = useCallback(async (append = false) => {
     append ? setLoadingMore(true) : setLoading(true);
@@ -106,6 +119,7 @@ export function InboxScreen({ account, profilePhotoUrl, onOpenMail, onOpenSettin
               mail={mail}
               onOpen={() => onOpenMail(mail)}
               onAddToCalendar={() => setCalendarMail(mail)}
+              onToggleRead={() => void toggleRead(mail)}
             />
           ))}
           {error && messages.length > 0 && <ErrorState message={error} onRetry={() => void load(Boolean(nextLink))} />}

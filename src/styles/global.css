@@ -173,6 +173,10 @@ body::after { width: 360px; height: 360px; bottom: -160px; left: -160px; backgro
 .sender-card span { margin-top: 2px; color: var(--muted); font-size: .78rem; }
 .sender-card time { align-self: start; max-width: 105px; color: var(--muted); font-size: .72rem; line-height: 1.35; text-align: right; }
 .message-body { max-width: 100%; min-height: 180px; margin: 0; padding: 25px 0; color: var(--text); font: inherit; font-size: .98rem; line-height: 1.72; overflow-wrap: anywhere; white-space: pre-wrap; word-break: break-word; }
+.html-message-body { width: 100%; min-width: 0; }
+.message-html-frame { display: block; width: 100%; min-height: 220px; border: 0; background: transparent; transition: height .24s ease; }
+.remote-images-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 0; padding: 11px 13px; border: 1px solid var(--line); border-radius: 14px; color: var(--muted); background: var(--surface); font-size: .78rem; line-height: 1.45; }
+.remote-images-notice button { flex: none; min-height: 36px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 11px; color: var(--accent-deep); background: var(--glass); font: inherit; font-weight: 750; cursor: pointer; }
 .detail-status-row { display: flex; align-items: center; min-height: 52px; gap: 9px; border-bottom: 1px solid var(--line); }
 .read-toggle-button { min-height: 40px; padding: 7px 11px; border: 0; border-radius: 11px; color: var(--accent-deep); background: color-mix(in srgb, var(--accent) 11%, transparent); font-size: .8rem; font-weight: 700; cursor: pointer; }
 .read-toggle-button:disabled { opacity: .55; }

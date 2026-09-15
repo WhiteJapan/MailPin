@@ -18,7 +18,7 @@ interface GraphMessage {
   isRead?: boolean;
   bodyPreview?: string;
   webLink?: string;
-  body?: { content?: string };
+  body?: { content?: string; contentType?: string };
 }
 
 interface GraphPage {
@@ -42,7 +42,8 @@ function mapMessage(message: GraphMessage): MailMessage {
 }
 
 interface GraphFetchOptions {
-  preferText?: boolean;
+  method?: 'GET' | 'PATCH';
+  body?: Record<string, unknown>;
 }
 
 async function graphFetch<T>(account: AccountInfo, url: string, options: GraphFetchOptions = {}): Promise<T> {
@@ -58,9 +59,10 @@ async function graphFetch<T>(account: AccountInfo, url: string, options: GraphFe
     response = await fetch(parsed.href, {
       headers: {
         Authorization: `Bearer ${token}`,
-        ...(options.preferText ? { Prefer: 'outlook.body-content-type="text"' } : {}),
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       },
-      method: 'GET',
+      method: options.method || 'GET',
+      body: options.body ? JSON.stringify(options.body) : undefined,
       cache: 'no-store',
     });
   } catch {
@@ -95,9 +97,24 @@ export async function getMessageDetail(account: AccountInfo, id: string): Promis
   const data = await graphFetch<GraphMessage>(
     account,
     `${graphBase}/me/messages/${encodeURIComponent(id)}?${query}`,
-    { preferText: true },
   );
-  return { ...mapMessage(data), body: data.body?.content || '本文はありません。' };
+  return {
+    ...mapMessage(data),
+    body: data.body?.content || '本文はありません。',
+    bodyContentType: data.body?.contentType?.toLowerCase() === 'html' ? 'html' : 'text',
+  };
+}
+
+export async function updateMessageReadState(
+  account: AccountInfo,
+  id: string,
+  isRead: boolean,
+): Promise<void> {
+  await graphFetch<GraphMessage>(
+    account,
+    `${graphBase}/me/messages/${encodeURIComponent(id)}`,
+    { method: 'PATCH', body: { isRead } },
+  );
 }
 
 export async function getProfilePhoto(account: AccountInfo): Promise<Blob | null> {

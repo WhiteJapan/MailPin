@@ -12,7 +12,7 @@ interface PreparedEmail {
 }
 
 const forbiddenTags = [
-  'script', 'noscript', 'style', 'link', 'meta', 'base', 'form', 'input', 'button',
+  'script', 'noscript', 'link', 'meta', 'base', 'form', 'input', 'button',
   'textarea', 'select', 'option', 'iframe', 'frame', 'frameset', 'object', 'embed',
   'video', 'audio', 'canvas', 'svg', 'math',
 ];
@@ -21,14 +21,29 @@ function isRemoteSource(value: string): boolean {
   return /^(?:https?:)?\/\//i.test(value.trim());
 }
 
+function cleanEmailCss(value: string): string {
+  return value
+    .replace(/@import[\s\S]*?;/gi, '')
+    .replace(/expression\s*\(/gi, 'blocked(')
+    .replace(/(?:behavior|-moz-binding)\s*:[^;}]+[;}]/gi, '')
+    .replace(/<\/style/gi, '<\\/style');
+}
+
 function prepareEmail(html: string, allowRemoteImages: boolean, dark: boolean): PreparedEmail {
   const sanitized = DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
+    WHOLE_DOCUMENT: true,
     FORBID_TAGS: forbiddenTags,
     FORBID_ATTR: ['srcdoc', 'formaction'],
   });
   const parsed = new DOMParser().parseFromString(sanitized, 'text/html');
   let hasRemoteImages = false;
+
+  const emailStyles = Array.from(parsed.querySelectorAll('style'))
+    .map((style) => cleanEmailCss(style.textContent || ''))
+    .join('\n');
+  parsed.querySelectorAll('style').forEach((style) => style.remove());
+  if (/url\(\s*['"]?(?:https?:)?\/\//i.test(emailStyles)) hasRemoteImages = true;
 
   parsed.querySelectorAll<HTMLAnchorElement>('a').forEach((link) => {
     const href = link.getAttribute('href')?.trim() || '';
@@ -92,18 +107,25 @@ function prepareEmail(html: string, allowRemoteImages: boolean, dark: boolean): 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="${contentSecurityPolicy}">
+${emailStyles ? `<style>${emailStyles}</style>` : ''}
 <style>
   :root { color-scheme: ${dark ? 'dark' : 'light'}; }
-  html, body { margin: 0; padding: 0; color: ${foreground}; background: transparent; font: 15px/1.72 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow-wrap: anywhere; word-break: break-word; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0; padding: 0; color: ${foreground}; background: transparent; font: 15px/1.72 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow-x: hidden; overflow-wrap: anywhere; word-break: break-word; }
   body { padding: 22px 1px 6px; }
+  body > table, body > div, body > center, div, center { max-width: 100% !important; }
   a { color: ${link}; text-decoration-thickness: 1px; text-underline-offset: 2px; }
   img { max-width: 100% !important; height: auto !important; border-radius: 6px; }
   img[data-remote-image-blocked] { display: none !important; }
   table { max-width: 100% !important; border-collapse: collapse; }
-  td, th { max-width: 100%; }
+  td, th { max-width: 100% !important; overflow-wrap: anywhere; word-break: break-word; }
   blockquote { margin-inline: 0; padding-inline-start: 14px; color: ${muted}; border-inline-start: 3px solid ${border}; }
   pre { max-width: 100%; white-space: pre-wrap; }
   hr { border: 0; border-top: 1px solid ${border}; }
+  @media (max-width: 520px) {
+    table, tbody, tr, td, th { max-width: 100% !important; }
+    img[width], table[width] { max-width: 100% !important; }
+  }
 </style></head><body>${body}</body></html>`;
 
   return { document, hasRemoteImages };
@@ -123,9 +145,13 @@ export function HtmlMessageBody({ html, title }: HtmlMessageBodyProps) {
   useEffect(() => () => resizeObserverRef.current?.disconnect(), []);
 
   function resizeFrame() {
-    const body = frameRef.current?.contentDocument?.body;
-    if (!body) return;
-    const update = () => setHeight(Math.min(12000, Math.max(220, body.scrollHeight + 8)));
+    const frameDocument = frameRef.current?.contentDocument;
+    const body = frameDocument?.body;
+    if (!body || !frameDocument) return;
+    const update = () => {
+      const contentHeight = Math.max(body.scrollHeight, frameDocument.documentElement.scrollHeight);
+      setHeight(Math.min(16000, Math.max(220, contentHeight + 8)));
+    };
     update();
     resizeObserverRef.current?.disconnect();
     resizeObserverRef.current = new ResizeObserver(update);

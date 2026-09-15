@@ -6,20 +6,16 @@ import {
   type AuthenticationResult,
 } from '@azure/msal-browser';
 
-// Mail.ReadWriteは既読・未読状態をOutlook側へ反映するためにだけ使用する。
-// メール送信権限は要求しない。
-export const graphScopes = ['User.Read', 'Mail.ReadWrite'];
+// メールの読み取りに必要な最小権限だけを要求する。メールの変更・送信権限は要求しない。
+export const graphScopes = ['User.Read', 'Mail.Read'];
 
 const clientId = import.meta.env.VITE_MS_CLIENT_ID?.trim();
-const configuredRedirect = import.meta.env.VITE_MS_REDIRECT_URI?.trim();
 
 export const hasAuthConfiguration = Boolean(clientId && !/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(clientId));
 
-function defaultRedirectUri(): string {
-  return new URL(import.meta.env.BASE_URL, window.location.origin).href;
-}
-
-export const redirectUri = configuredRedirect || defaultRedirectUri();
+// ビルド時の環境変数を使うと古いHTTP URLが本番バンドルへ残り得るため、
+// OAuthを開始した現在のHTTPSオリジンから毎回決定する。
+export const redirectUri = `${window.location.origin}/`;
 
 export const msal = new PublicClientApplication({
   auth: {

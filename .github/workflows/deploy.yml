@@ -37,7 +37,6 @@ jobs:
         env:
           # SPAのクライアントIDはブラウザへ配布される公開識別子で、秘密情報ではありません。
           VITE_MS_CLIENT_ID: 9806348b-0854-4f00-b8be-8a2a7c6ae6de
-          VITE_MS_REDIRECT_URI: ${{ steps.pages.outputs.base_url }}/
           VITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
